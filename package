@@ -1,0 +1,13 @@
+#!/bin/sh
+
+git fetch --all
+git merge upstream/main
+git submodule update --init
+make force-clean
+make picoarch platform=funkey-s
+cp README.funkey-s.md opk/
+
+rm -f *.opk
+mksquashfs opk/ picoarch_funkey-s.opk -all-root -noappend -no-exports -no-xattrs
+md5sum picoarch
+rm -f opk/README.funkey-s.md
