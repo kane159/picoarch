@@ -3,7 +3,7 @@
 git fetch --all
 git merge upstream/main
 git submodule update --init
-make force-clean
+make distclean
 make picoarch platform=funkey-s
 cp README.funkey-s.md opk/
 
