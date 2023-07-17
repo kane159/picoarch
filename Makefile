@@ -7,7 +7,7 @@ SYSROOT   = $(shell $(CC) --print-sysroot)
 
 PROCS     = -j4
 
-OBJS      = libpicofe/input.o libpicofe/in_sdl.o libpicofe/linux/in_evdev.o libpicofe/linux/plat.o libpicofe/fonts.o libpicofe/readpng.o libpicofe/config_file.o cheat.o config.o content.o core.o menu.o main.o options.o overrides.o patch.o scale.o unzip.o util.o video.o
+SOURCES   = libpicofe/input.c libpicofe/in_sdl.c libpicofe/linux/in_evdev.c libpicofe/linux/plat.c libpicofe/fonts.c libpicofe/readpng.c libpicofe/config_file.c cheat.c config.c content.c core.c menu.c main.c options.c overrides.c patch.c scale.c unzip.c util.c video.c
 
 BIN       = picoarch
 
@@ -18,7 +18,7 @@ CFLAGS     += -I./ -I./libretro-common/include/ $(shell $(SYSROOT)/usr/bin/sdl-c
 LDFLAGS    = -lc -ldl -lgcc -lm -lSDL -lasound -lpng -lz -Wl,--gc-sections -flto
 
 # Unpolished or slow cores that build
-# EXTRA_CORES += fbalpha2012 mame2003_plus prboom scummvm tyrquake
+# EXTRA_CORES += mame2003_plus prboom scummvm tyrquake
 
 CORES = beetle-pce-fast bluemsx fceumm fmsx gambatte gme gpsp mame2000 pcsx_rearmed picodrive pokemini quicknes smsplus-gx snes9x2002 snes9x2005 $(EXTRA_CORES)
 
@@ -105,17 +105,17 @@ snes9x2010_TYPES = smc,fig,sfc,gd3,gd7,dx2,bsx,swc,zip
 tyrquake_TYPES = pak
 
 ifeq ($(platform), trimui)
-	OBJS += plat_trimui.o
+	SOURCES += plat_trimui.c
 	CFLAGS += -mcpu=arm926ej-s -mtune=arm926ej-s -fno-PIC -DCONTENT_DIR='"/mnt/SDCARD/Roms"'
 	LDFLAGS += -fno-PIC
 else ifeq ($(platform), funkey-s)
-	OBJS += plat_funkey.o funkey/fk_menu.o funkey/fk_instant_play.o
+	SOURCES += plat_funkey.c funkey/fk_menu.c funkey/fk_instant_play.c
 	CFLAGS += -DCONTENT_DIR='"/mnt"' -DFUNKEY_S
 	LDFLAGS += -fPIC
 	LDFLAGS += -lSDL_image -lSDL_ttf # For fk_menu
 	core_platform = classic_armv7_a7
 else ifeq ($(platform), unix)
-	OBJS += plat_linux.o
+	SOURCES += plat_linux.c
 	LDFLAGS += -fPIE
 endif
 
@@ -155,23 +155,29 @@ CFLAGS += $(EXTRA_CFLAGS)
 
 SOFILES = $(foreach core,$(CORES),$(core)_libretro.so)
 
+.PHONY: print-%
 print-%:
 	@echo '$*=$($*)'
 
+.PHONY: all
 all: $(BIN) cores
 
 libpicofe/.patched:
-	cd libpicofe && ($(foreach patch, $(sort $(wildcard patches/libpicofe/*.patch)), git apply -p1 < ../$(patch) &&) touch .patched)
+	cd libpicofe && ($(foreach patch, $(sort $(wildcard patches/libpicofe/*.patch)), patch --no-backup-if-mismatch --merge -p1 < ../$(patch) &&) touch .patched)
 
 reverse = $(if $(wordlist 2,2,$(1)),$(call reverse,$(wordlist 2,$(words $(1)),$(1))) $(firstword $(1)),$(1))
 
+.PHONY: clean-libpicofe
 clean-libpicofe:
-	test ! -f libpicofe/.patched || (cd libpicofe && ($(foreach patch, $(call reverse,$(sort $(wildcard patches/libpicofe/*.patch))), git apply -R -p1 < ../$(patch) &&) rm .patched))
+	test ! -f libpicofe/.patched || (cd libpicofe && ($(foreach patch, $(call reverse,$(sort $(wildcard patches/libpicofe/*.patch))), patch -R --merge --no-backup-if-mismatch -p1 < ../$(patch) &&) rm .patched))
 
-plat_trimui.o: plat_sdl.c
-plat_funkey.o: plat_sdl.c
-plat_linux.o: plat_sdl.c
-overrides.o: overrides.c overrides/*.h
+CFLAGS += -MMD -MP
+DEPS=$(SOURCES:.c=.d)
+$(DEPS):
+
+include $(wildcard $(DEPS))
+
+OBJS = $(SOURCES:.c=.o)
 
 $(BIN): libpicofe/.patched $(OBJS)
 	$(CC) $(OBJS) $(LDFLAGS) -o $(BIN)
@@ -187,7 +193,7 @@ $1_MAKE = make $(and $($1_MAKEFILE),-f $($1_MAKEFILE)) platform=$(core_platform)
 $(1):
 	git clone $(if $($1_REVISION),,--depth 1) --recursive $$($(1)_REPO) $(1)
 	$(if $1_REVISION,cd $(1) && git checkout $($1_REVISION),)
-	(test ! -d patches/$(1)) || (cd $(1) && $(foreach patch, $(sort $(wildcard patches/$(1)/*.patch)), git apply -p1 < ../$(patch) &&) true)
+	(test ! -d patches/$(1)) || (cd $(1) && $(foreach patch, $(sort $(wildcard patches/$(1)/*.patch)), patch --merge --no-backup-if-mismatch -p1 < ../$(patch) &&) true)
 
 $(1)/$(1)_libretro.so: $(1)
 	cd $$($1_BUILD_PATH) && $$($1_MAKE) $(PROCS)
@@ -202,20 +208,25 @@ endef
 
 $(foreach core,$(CORES),$(eval $(call CORE_template,$(core))))
 
+.PHONY: cores
 cores: $(SOFILES)
 
+.PHONY: clean-picoarch
 clean-picoarch:
-	rm -f $(OBJS) $(BIN)
+	rm -f $(DEPS) $(OBJS) $(BIN)
 	rm -rf pkg
 	rm -f *.opk
 
+.PHONY: clean
 clean: clean-libpicofe clean-picoarch
 	rm -f $(SOFILES)
 
+.PHONY: clean-all
 clean-all: $(foreach core,$(CORES),clean-$(core)) clean
 
-force-clean: clean
-	rm -rf $(CORES)
+.PHONY: distclean
+distclean: clean
+	rm -rf $(CORES) *.zip
 
 ifeq ($(platform), trimui)
 
@@ -399,11 +410,11 @@ beetle-pce-fast_ICON = pce
 
 bluemsx_NAME = blueMSX
 bluemsx_ROM_DIR = /mnt/MSX
-bluemsx_ICON_URL = https://raw.githubusercontent.com/MiyooCFW/gmenunx/master/assets/miyoo/skins/PixUI/icons/dingux-msx.png
+bluemsx_ICON_URL = https://raw.githubusercontent.com/MiyooCFW/gmenu2x/gmenunx/assets/miyoo/skins/PixUI/icons/dingux-msx.png
 bluemsx_ICON = dingux-msx
 
 dosbox-pure_ROM_DIR = /mnt/DOS
-dosbox-pure_ICON_URL = https://raw.githubusercontent.com/MiyooCFW/gmenunx/master/assets/miyoo/skins/PixUI/icons/dosbox.png
+dosbox-pure_ICON_URL = https://raw.githubusercontent.com/MiyooCFW/gmenu2x/gmenunx/assets/miyoo/skins/PixUI/icons/dosbox.png
 dosbox-pure_ICON = dosbox
 
 fake-08_NAME = fake-08
@@ -413,7 +424,7 @@ fake-08_ICON = icon0
 
 fbalpha2012_NAME = fba2012
 fbalpha2012_ROM_DIR = /mnt/Arcade
-fbalpha2012_ICON_URL = https://raw.githubusercontent.com/MiyooCFW/gmenunx/master/assets/miyoo/skins/PixUI/icons/fba.png
+fbalpha2012_ICON_URL = https://raw.githubusercontent.com/MiyooCFW/gmenu2x/gmenunx/assets/miyoo/skins/PixUI/icons/fba.png
 fbalpha2012_ICON = fba
 
 fceumm_ROM_DIR = /mnt/NES
@@ -422,7 +433,7 @@ fceumm_ICON = nes
 
 fmsx_NAME = fMSX
 fmsx_ROM_DIR = /mnt/MSX
-fmsx_ICON_URL = https://raw.githubusercontent.com/MiyooCFW/gmenunx/master/assets/miyoo/skins/PixUI/icons/dingux-msx.png
+fmsx_ICON_URL = https://raw.githubusercontent.com/MiyooCFW/gmenu2x/gmenunx/assets/miyoo/skins/PixUI/icons/dingux-msx.png
 fmsx_ICON = dingux-msx
 
 gambatte_ROM_DIR = /mnt/Game Boy
@@ -431,7 +442,7 @@ gambatte_ICON = gb
 
 gme_ROM_DIR = /mnt/Music
 gme_TYPES = ay,gbs,gym,hes,kss,nsf,nsfe,sap,spc,vgm,vgz,zip
-gme_ICON_URL = https://raw.githubusercontent.com/MiyooCFW/gmenunx/master/assets/miyoo/skins/PixUI/icons/gmu.png
+gme_ICON_URL = https://raw.githubusercontent.com/MiyooCFW/gmenu2x/gmenunx/assets/miyoo/skins/PixUI/icons/gmu.png
 gme_ICON = gmu
 
 gpsp_ROM_DIR = /mnt/Game Boy Advance
@@ -439,16 +450,16 @@ gpsp_ICON_URL = https://raw.githubusercontent.com/FunKey-Project/FunKey-OS/maste
 gpsp_ICON = gba
 
 mame2000_ROM_DIR = /mnt/Arcade
-mame2000_ICON_URL = https://raw.githubusercontent.com/MiyooCFW/gmenunx/master/assets/miyoo/skins/PixUI/icons/mame.png
+mame2000_ICON_URL = https://raw.githubusercontent.com/MiyooCFW/gmenu2x/gmenunx/assets/miyoo/skins/PixUI/icons/mame.png
 mame2000_ICON = mame
 
 mame2003_plus_NAME = mame2003+
 mame2003_plus_ROM_DIR = /mnt/Arcade
-mame2003_plus_ICON_URL = https://raw.githubusercontent.com/MiyooCFW/gmenunx/master/assets/miyoo/skins/PixUI/icons/mame.png
+mame2003_plus_ICON_URL = https://raw.githubusercontent.com/MiyooCFW/gmenu2x/gmenunx/assets/miyoo/skins/PixUI/icons/mame.png
 mame2003_plus_ICON = icon
 
 pcsx_rearmed_ROM_DIR = /mnt/PS1
-pcsx_rearmed_ICON_URL = https://raw.githubusercontent.com/MiyooCFW/gmenunx/master/assets/miyoo/skins/PixUI/icons/pcsx4all.png
+pcsx_rearmed_ICON_URL = https://raw.githubusercontent.com/MiyooCFW/gmenu2x/gmenunx/assets/miyoo/skins/PixUI/icons/pcsx4all.png
 pcsx_rearmed_ICON = pcsx4all
 
 picodrive_ROM_DIR = /mnt/Sega Genesis
@@ -456,7 +467,7 @@ picodrive_ICON_URL = https://raw.githubusercontent.com/FunKey-Project/FunKey-OS/
 picodrive_ICON = megadrive
 
 pokemini_ROM_DIR = /mnt/PokeMini
-pokemini_ICON_URL = https://raw.githubusercontent.com/MiyooCFW/gmenunx/master/assets/miyoo/skins/PixUI/icons/pokemini.png
+pokemini_ICON_URL = https://raw.githubusercontent.com/MiyooCFW/gmenu2x/gmenunx/assets/miyoo/skins/PixUI/icons/pokemini.png
 pokemini_ICON = pokemini
 
 quicknes_ROM_DIR = /mnt/NES
@@ -497,7 +508,7 @@ Exec=picoarch ./$1_libretro.so %f
 Icon=$$($1_ICON)
 SelectorBrowser=true
 SelectorDir=$($1_ROM_DIR)
-SelectorFilter=$($1_TYPES)
+SelectorFilter=$($1_TYPES),zip
 Terminal=false
 Type=Application
 StartupNotify=true
@@ -511,7 +522,7 @@ picoarch-$(1).opk: $(BIN) $(1)_libretro.so
 	mv $$($(1)_NAME).funkey-s.desktop .opkdata
 	cp $(BIN) $(1)_libretro.so .opkdata
 	$(if $($(1)_ICON_URL),cd .opkdata && curl -L $($(1)_ICON_URL) -O && mogrify -resize '32x32>' $($(1)_ICON).png,)
-	cd .opkdata && mksquashfs * ../picoarch-$(1).opk -all-root -no-xattrs -noappend -no-exports
+	cd .opkdata && mksquashfs * ../$$@ -all-root -no-xattrs -noappend -no-exports
 	rm -r .opkdata
 endef
 
@@ -529,13 +540,13 @@ StartupNotify=true
 Categories=emulators;
 endef
 
-picoarch.opk: $(BIN) cores
+picoarch.opk: $(BIN) $(SOFILES)
 	mkdir -p .opkdata
 	$(file >picoarch.funkey-s.desktop,$(picoarch_DESKTOP))
 	mv picoarch.funkey-s.desktop .opkdata
 	cp $(BIN) $(SOFILES) .opkdata
 	cd .opkdata && curl -L -O https://raw.githubusercontent.com/FunKey-Project/sdlretro/master/data/sdlretro_icon.png
-	cd .opkdata && mksquashfs * ../picoarch.opk -all-root -no-xattrs -noappend -no-exports
+	cd .opkdata && mksquashfs * ../$@ -all-root -no-xattrs -noappend -no-exports
 	rm -r .opkdata
 
 define picoarch_lite_DESKTOP
@@ -559,11 +570,18 @@ picoarch-lite.opk: $(BIN)
 	mv picoarch.funkey-s.desktop .opkdata
 	cp $(BIN) .opkdata
 	cd .opkdata && curl -L -O https://raw.githubusercontent.com/FunKey-Project/sdlretro/master/data/sdlretro_icon.png
-	cd .opkdata && mksquashfs * ../picoarch-lite.opk -all-root -no-xattrs -noappend -no-exports
+	cd .opkdata && mksquashfs * ../$@ -all-root -no-xattrs -noappend -no-exports
 	rm -r .opkdata
 
 picoarch-funkey-s.zip: picoarch.opk $(foreach core, $(CORES), picoarch-$(core).opk)
-	rm -f picoarch-funkey-s.zip
-	zip picoarch-funkey-s.zip README.funkey-s.md *.opk
+	rm -f $@
+	zip $@ $^
+
+cores-funkey-s.zip: $(SOFILES)
+	rm -f $@
+	zip $@ $^
+
+.PHONY: dist
+dist: picoarch-lite.opk picoarch-funkey-s.zip cores-funkey-s.zip
 
 endif # platform=funkey-s
