@@ -9,9 +9,10 @@
 #include "scale.h"
 #include "util.h"
 
-static SDL_Surface* screen;
+static SDL_Surface *screen;
 
-struct audio_state {
+struct audio_state
+{
 	unsigned buf_w;
 	unsigned max_buf_w;
 	unsigned buf_r;
@@ -39,7 +40,8 @@ static unsigned msg_expire = 0;
 static bool frame_dirty = false;
 static int frame_time = 1000000 / 60;
 
-static uint64_t plat_get_ticks_us_u64(void) {
+static uint64_t plat_get_ticks_us_u64(void)
+{
 	uint64_t ret;
 	struct timeval tv;
 
@@ -74,25 +76,31 @@ static void video_print_msg(uint16_t *dst, uint32_t h, uint32_t pitch, char *msg
 	basic_text_out16_nf(dst, pitch, 2, h - 10, msg);
 }
 
-static int audio_resample_passthrough(struct audio_frame data) {
+static int audio_resample_passthrough(struct audio_frame data)
+{
 	audio.buf[audio.buf_w++] = data;
-	if (audio.buf_w >= audio.buf_len) audio.buf_w = 0;
+	if (audio.buf_w >= audio.buf_len)
+		audio.buf_w = 0;
 
 	return 1;
 }
 
-static int audio_resample_nearest(struct audio_frame data) {
+static int audio_resample_nearest(struct audio_frame data)
+{
 	static int diff = 0;
 	int consumed = 0;
 
-	if (diff < audio.adj_out_sample_rate) {
+	if (diff < audio.adj_out_sample_rate)
+	{
 		audio.buf[audio.buf_w++] = data;
-		if (audio.buf_w >= audio.buf_len) audio.buf_w = 0;
+		if (audio.buf_w >= audio.buf_len)
+			audio.buf_w = 0;
 
 		diff += audio.in_sample_rate;
 	}
 
-	if (diff >= audio.adj_out_sample_rate) {
+	if (diff >= audio.adj_out_sample_rate)
+	{
 		consumed++;
 		diff -= audio.adj_out_sample_rate;
 	}
@@ -100,47 +108,56 @@ static int audio_resample_nearest(struct audio_frame data) {
 	return consumed;
 }
 
-static void *fb_flip(void)
+static SDL_Surface *fb_flip(void)
 {
 	SDL_Flip(screen);
-	return screen->pixels;
+	return screen;
 }
 
 void *plat_prepare_screenshot(int *w, int *h, int *bpp)
 {
-	if (w) *w = SCREEN_WIDTH;
-	if (h) *h = SCREEN_HEIGHT;
-	if (bpp) *bpp = SCREEN_BPP;
+	if (w)
+		*w = SCREEN_WIDTH;
+	if (h)
+		*h = SCREEN_HEIGHT;
+	if (bpp)
+		*bpp = SCREEN_BPP;
 
 	return screen->pixels;
 }
 
-int plat_dump_screen(const char *filename) {
+int plat_dump_screen(const char *filename)
+{
 	char imgname[MAX_PATH];
 	int ret = -1;
 	SDL_Surface *surface = NULL;
 
 	snprintf(imgname, MAX_PATH, "%s.bmp", filename);
 
-	if (g_menuscreen_ptr) {
+	if (g_menuscreen_surface)
+	{
 		surface = SDL_CreateRGBSurfaceFrom(g_menubg_src_ptr,
-		                                   g_menubg_src_w,
-		                                   g_menubg_src_h,
-		                                   16,
-		                                   g_menubg_src_w * sizeof(uint16_t),
-		                                   0xF800, 0x07E0, 0x001F, 0x0000);
-		if (surface) {
+										   g_menubg_src_w,
+										   g_menubg_src_h,
+										   16,
+										   g_menubg_src_w * sizeof(uint16_t),
+										   0xF800, 0x07E0, 0x001F, 0x0000);
+		if (surface)
+		{
 			ret = SDL_SaveBMP(surface, imgname);
 			SDL_FreeSurface(surface);
 		}
-	} else {
+	}
+	else
+	{
 		ret = SDL_SaveBMP(screen, imgname);
 	}
 
 	return ret;
 }
 
-int plat_load_screen(const char *filename, void *buf, size_t buf_size, int *w, int *h, int *bpp) {
+int plat_load_screen(const char *filename, void *buf, size_t buf_size, int *w, int *h, int *bpp)
+{
 	int ret = -1;
 	char imgname[MAX_PATH];
 	SDL_Surface *imgsurface = NULL;
@@ -156,9 +173,9 @@ int plat_load_screen(const char *filename, void *buf, size_t buf_size, int *w, i
 		goto finish;
 
 	if (surface->pitch > SCREEN_PITCH ||
-	    surface->h > SCREEN_HEIGHT ||
-	    surface->w == 0 ||
-	    surface->h * surface->pitch > buf_size)
+		surface->h > SCREEN_HEIGHT ||
+		surface->w == 0 ||
+		surface->h * surface->pitch > buf_size)
 		goto finish;
 
 	memcpy(buf, surface->pixels, surface->pitch * surface->h);
@@ -176,29 +193,26 @@ finish:
 	return ret;
 }
 
-
 void plat_video_menu_enter(int is_rom_loaded)
 {
-	if (g_menuscreen_ptr)
+	if (g_menuscreen_surface)
 		return;
 
 	SDL_LockSurface(screen);
 	memcpy(g_menubg_src_ptr, screen->pixels, g_menubg_src_h * g_menubg_src_pp * sizeof(uint16_t));
 	SDL_UnlockSurface(screen);
-	g_menuscreen_ptr = fb_flip();
+	g_menuscreen_surface = fb_flip();
 }
 
 void plat_video_menu_begin(void)
 {
-	SDL_LockSurface(screen);
 	menu_begin();
 }
 
 void plat_video_menu_end(void)
 {
 	menu_end();
-	SDL_UnlockSurface(screen);
-	g_menuscreen_ptr = fb_flip();
+	g_menuscreen_surface = fb_flip();
 }
 
 void plat_video_menu_leave(void)
@@ -213,7 +227,7 @@ void plat_video_menu_leave(void)
 	memset(screen->pixels, 0, g_menuscreen_h * g_menuscreen_pp * sizeof(uint16_t));
 	SDL_UnlockSurface(screen);
 
-	g_menuscreen_ptr = NULL;
+	g_menuscreen_surface = NULL;
 }
 
 void plat_video_open(void)
@@ -222,9 +236,12 @@ void plat_video_open(void)
 
 void plat_video_set_msg(const char *new_msg, unsigned priority, unsigned msec)
 {
-	if (!new_msg) {
+	if (!new_msg)
+	{
 		video_expire_msg();
-	} else if (priority >= msg_priority) {
+	}
+	else if (priority >= msg_priority)
+	{
 		snprintf(msg, HUD_LEN, "%s", new_msg);
 		string_truncate(msg, HUD_LEN - 1);
 		msg_priority = priority;
@@ -232,19 +249,22 @@ void plat_video_set_msg(const char *new_msg, unsigned priority, unsigned msec)
 	}
 }
 
-void plat_video_process(const void *data, unsigned width, unsigned height, size_t pitch) {
+void plat_video_process(const void *data, unsigned width, unsigned height, size_t pitch)
+{
 	static int had_msg = 0;
 	frame_dirty = true;
 	SDL_LockSurface(screen);
 
-	if (had_msg) {
+	if (had_msg)
+	{
 		video_clear_msg(screen->pixels, screen->h, screen->pitch / SCREEN_BPP);
 		had_msg = 0;
 	}
 
 	scale(width, height, pitch, data, screen->pixels);
 
-	if (msg[0]) {
+	if (msg[0])
+	{
 		video_print_msg(screen->pixels, screen->h, screen->pitch / SCREEN_BPP, msg);
 		had_msg = 1;
 	}
@@ -258,11 +278,14 @@ void plat_video_flip(void)
 {
 	static uint64_t next_frame_time_us = 0;
 
-	if (frame_dirty) {
-		if (enable_drc) {
+	if (frame_dirty)
+	{
+		if (enable_drc)
+		{
 			uint64_t time = plat_get_ticks_us_u64();
 
-			if (limit_frames && time < next_frame_time_us) {
+			if (limit_frames && time < next_frame_time_us)
+			{
 				uint32_t delaytime = (next_frame_time_us - time - 1) / 1000 + 1;
 
 				if (delaytime < 1000)
@@ -273,16 +296,20 @@ void plat_video_flip(void)
 				time = plat_get_ticks_us_u64();
 			}
 
-			if (!next_frame_time_us || !limit_frames) {
+			if (!next_frame_time_us || !limit_frames)
+			{
 				next_frame_time_us = time;
 			}
 
 			fb_flip();
 
-			do {
+			do
+			{
 				next_frame_time_us += frame_time;
 			} while (next_frame_time_us < time);
-		} else {
+		}
+		else
+		{
 			fb_flip();
 			next_frame_time_us = 0;
 		}
@@ -328,7 +355,8 @@ static void plat_sound_callback(void *unused, uint8_t *stream, int len)
 
 	len /= (sizeof(int16_t) * 2);
 
-	while (audio.buf_r != audio.buf_w && len > 0) {
+	while (audio.buf_r != audio.buf_w && len > 0)
+	{
 		*p++ = audio.buf[audio.buf_r].left;
 		*p++ = audio.buf[audio.buf_r].right;
 		audio.max_buf_w = audio.buf_r;
@@ -336,10 +364,12 @@ static void plat_sound_callback(void *unused, uint8_t *stream, int len)
 		len--;
 		audio.buf_r++;
 
-		if (audio.buf_r >= audio.buf_len) audio.buf_r = 0;
+		if (audio.buf_r >= audio.buf_len)
+			audio.buf_r = 0;
 	}
 
-	while(len > 0) {
+	while (len > 0)
+	{
 		*p++ = 0;
 		--len;
 	}
@@ -349,7 +379,8 @@ static void plat_sound_finish(void)
 {
 	SDL_PauseAudio(1);
 	SDL_CloseAudio();
-	if (audio.buf) {
+	if (audio.buf)
+	{
 		free(audio.buf);
 		audio.buf = NULL;
 	}
@@ -357,7 +388,8 @@ static void plat_sound_finish(void)
 
 static int plat_sound_init(void)
 {
-	if (SDL_InitSubSystem(SDL_INIT_AUDIO)) {
+	if (SDL_InitSubSystem(SDL_INIT_AUDIO))
+	{
 		return -1;
 	}
 
@@ -369,7 +401,8 @@ static int plat_sound_init(void)
 	spec.samples = 512;
 	spec.callback = plat_sound_callback;
 
-	if (SDL_OpenAudio(&spec, &received) < 0) {
+	if (SDL_OpenAudio(&spec, &received) < 0)
+	{
 		plat_sound_finish();
 		return -1;
 	}
@@ -392,10 +425,9 @@ int plat_sound_occupancy(void)
 	if (audio.buf_len == 0)
 		return 0;
 
-	if (audio.buf_w != audio.buf_r) {
-		buffered = audio.buf_w > audio.buf_r ?
-			audio.buf_w - audio.buf_r :
-			(audio.buf_w + audio.buf_len) - audio.buf_r;
+	if (audio.buf_w != audio.buf_r)
+	{
+		buffered = audio.buf_w > audio.buf_r ? audio.buf_w - audio.buf_r : (audio.buf_w + audio.buf_len) - audio.buf_r;
 	}
 
 	return buffered * 100 / audio.buf_len;
@@ -408,25 +440,33 @@ void plat_sound_write_resample(const struct audio_frame *data, int frames, int (
 	if (audio.buf_len == 0)
 		return;
 
-	if (drc) {
+	if (drc)
+	{
 		int occupancy = plat_sound_occupancy();
 
-		if (occupancy < DRC_ADJ_BELOW) {
+		if (occupancy < DRC_ADJ_BELOW)
+		{
 			audio.adj_out_sample_rate = audio.out_sample_rate + audio.sample_rate_adj;
-		} else if (occupancy > DRC_ADJ_ABOVE) {
+		}
+		else if (occupancy > DRC_ADJ_ABOVE)
+		{
 			audio.adj_out_sample_rate = audio.out_sample_rate - audio.sample_rate_adj;
-		} else {
+		}
+		else
+		{
 			audio.adj_out_sample_rate = audio.out_sample_rate;
 		}
 	}
 
 	SDL_LockAudio();
 
-	while (frames > 0) {
+	while (frames > 0)
+	{
 		int tries = 0;
 		int amount = MIN(BATCH_SIZE, frames);
 
-		while (tries < 10 && audio.buf_w == audio.max_buf_w) {
+		while (tries < 10 && audio.buf_w == audio.max_buf_w)
+		{
 			tries++;
 			SDL_UnlockAudio();
 
@@ -437,7 +477,8 @@ void plat_sound_write_resample(const struct audio_frame *data, int frames, int (
 			SDL_LockAudio();
 		}
 
-		while (amount && audio.buf_w != audio.max_buf_w) {
+		while (amount && audio.buf_w != audio.max_buf_w)
+		{
 			consumed = resample(*data);
 			data += consumed;
 			amount -= consumed;
@@ -462,19 +503,21 @@ void plat_sound_write_drc(const struct audio_frame *data, int frames)
 	plat_sound_write_resample(data, frames, audio_resample_nearest, true);
 }
 
-void plat_sound_resize_buffer(void) {
+void plat_sound_resize_buffer(void)
+{
 	size_t buf_size;
 	SDL_LockAudio();
 
 	audio.buf_len = frame_rate > 0
-		? current_audio_buffer_size * audio.in_sample_rate / frame_rate
-		: 0;
+						? current_audio_buffer_size * audio.in_sample_rate / frame_rate
+						: 0;
 
-		/* Dynamic adjustment keeps buffer 50% full, need double size */
+	/* Dynamic adjustment keeps buffer 50% full, need double size */
 	if (enable_drc)
 		audio.buf_len *= 2;
 
-	if (audio.buf_len == 0) {
+	if (audio.buf_len == 0)
+	{
 		SDL_UnlockAudio();
 		return;
 	}
@@ -482,7 +525,8 @@ void plat_sound_resize_buffer(void) {
 	buf_size = audio.buf_len * sizeof(struct audio_frame);
 	audio.buf = realloc(audio.buf, buf_size);
 
-	if (!audio.buf) {
+	if (!audio.buf)
+	{
 		SDL_UnlockAudio();
 		PA_ERROR("Error initializing sound buffer\n");
 		plat_sound_finish();
@@ -498,13 +542,18 @@ void plat_sound_resize_buffer(void) {
 
 static void plat_sound_select_resampler(void)
 {
-	if (enable_drc) {
+	if (enable_drc)
+	{
 		PA_INFO("Using audio adjustment (in: %d, out: %d-%d)\n", audio.in_sample_rate, audio.out_sample_rate - audio.sample_rate_adj, audio.out_sample_rate + audio.sample_rate_adj);
 		plat_sound_write = plat_sound_write_drc;
-	} else if (audio.in_sample_rate == audio.out_sample_rate) {
+	}
+	else if (audio.in_sample_rate == audio.out_sample_rate)
+	{
 		PA_INFO("Using passthrough resampler (in: %d, out: %d)\n", audio.in_sample_rate, audio.out_sample_rate);
 		plat_sound_write = plat_sound_write_passthrough;
-	} else {
+	}
+	else
+	{
 		PA_INFO("Using nearest resampler (in: %d, out: %d)\n", audio.in_sample_rate, audio.out_sample_rate);
 		plat_sound_write = plat_sound_write_nearest;
 	}
@@ -520,7 +569,8 @@ int plat_init(void)
 
 	SDL_Init(SDL_INIT_VIDEO);
 	screen = SDL_SetVideoMode(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_BPP * 8, SDL_SWSURFACE);
-	if (screen == NULL) {
+	if (screen == NULL)
+	{
 		PA_ERROR("%s, failed to set video mode\n", __func__);
 		return -1;
 	}
@@ -530,19 +580,21 @@ int plat_init(void)
 	g_menuscreen_w = SCREEN_WIDTH;
 	g_menuscreen_h = SCREEN_HEIGHT;
 	g_menuscreen_pp = SCREEN_WIDTH;
-	g_menuscreen_ptr = NULL;
+	g_menuscreen_surface = NULL;
 
 	g_menubg_src_w = SCREEN_WIDTH;
 	g_menubg_src_h = SCREEN_HEIGHT;
 	g_menubg_src_pp = SCREEN_WIDTH;
 
-	if (in_sdl_init(&in_sdl_platform_data, plat_sdl_event_handler)) {
+	if (in_sdl_init(&in_sdl_platform_data, plat_sdl_event_handler))
+	{
 		PA_ERROR("SDL input failed to init: %s\n", SDL_GetError());
 		return -1;
 	}
 	in_probe();
 
-	if (plat_sound_init()) {
+	if (plat_sound_init())
+	{
 		PA_ERROR("SDL sound failed to init: %s\n", SDL_GetError());
 		return -1;
 	}
@@ -551,14 +603,18 @@ int plat_init(void)
 
 int plat_reinit(void)
 {
-	if (sample_rate && sample_rate != audio.in_sample_rate) {
+	if (sample_rate && sample_rate != audio.in_sample_rate)
+	{
 		plat_sound_finish();
 
-		if (plat_sound_init()) {
+		if (plat_sound_init())
+		{
 			PA_ERROR("SDL sound failed to init: %s\n", SDL_GetError());
 			return -1;
 		}
-	} else {
+	}
+	else
+	{
 		plat_sound_resize_buffer();
 		plat_sound_select_resampler();
 	}

@@ -47,38 +47,36 @@ typedef enum
 } menu_id;
 
 me_bind_action me_ctrl_actions[] =
-{
-	{ "UP       ",  1 << RETRO_DEVICE_ID_JOYPAD_UP},
-	{ "DOWN     ",  1 << RETRO_DEVICE_ID_JOYPAD_DOWN },
-	{ "LEFT     ",  1 << RETRO_DEVICE_ID_JOYPAD_LEFT },
-	{ "RIGHT    ",  1 << RETRO_DEVICE_ID_JOYPAD_RIGHT },
-	{ "A BUTTON ",  1 << RETRO_DEVICE_ID_JOYPAD_A },
-	{ "B BUTTON ",  1 << RETRO_DEVICE_ID_JOYPAD_B },
-	{ "X BUTTON ",  1 << RETRO_DEVICE_ID_JOYPAD_X },
-	{ "Y BUTTON ",  1 << RETRO_DEVICE_ID_JOYPAD_Y },
-	{ "START    ",  1 << RETRO_DEVICE_ID_JOYPAD_START },
-	{ "SELECT   ",  1 << RETRO_DEVICE_ID_JOYPAD_SELECT },
-	{ "L BUTTON ",  1 << RETRO_DEVICE_ID_JOYPAD_L },
-	{ "R BUTTON ",  1 << RETRO_DEVICE_ID_JOYPAD_R },
-	{ "L2 BUTTON ", 1 << RETRO_DEVICE_ID_JOYPAD_L2 },
-	{ "R2 BUTTON ", 1 << RETRO_DEVICE_ID_JOYPAD_R2 },
-	{ "L3 BUTTON ", 1 << RETRO_DEVICE_ID_JOYPAD_L3 },
-	{ "R3 BUTTON ", 1 << RETRO_DEVICE_ID_JOYPAD_R3 },
-	{ NULL,       0 }
-};
+	{
+		{"UP       ", 1 << RETRO_DEVICE_ID_JOYPAD_UP},
+		{"DOWN     ", 1 << RETRO_DEVICE_ID_JOYPAD_DOWN},
+		{"LEFT     ", 1 << RETRO_DEVICE_ID_JOYPAD_LEFT},
+		{"RIGHT    ", 1 << RETRO_DEVICE_ID_JOYPAD_RIGHT},
+		{"A BUTTON ", 1 << RETRO_DEVICE_ID_JOYPAD_A},
+		{"B BUTTON ", 1 << RETRO_DEVICE_ID_JOYPAD_B},
+		{"X BUTTON ", 1 << RETRO_DEVICE_ID_JOYPAD_X},
+		{"Y BUTTON ", 1 << RETRO_DEVICE_ID_JOYPAD_Y},
+		{"START    ", 1 << RETRO_DEVICE_ID_JOYPAD_START},
+		{"SELECT   ", 1 << RETRO_DEVICE_ID_JOYPAD_SELECT},
+		{"L BUTTON ", 1 << RETRO_DEVICE_ID_JOYPAD_L},
+		{"R BUTTON ", 1 << RETRO_DEVICE_ID_JOYPAD_R},
+		{"L2 BUTTON ", 1 << RETRO_DEVICE_ID_JOYPAD_L2},
+		{"R2 BUTTON ", 1 << RETRO_DEVICE_ID_JOYPAD_R2},
+		{"L3 BUTTON ", 1 << RETRO_DEVICE_ID_JOYPAD_L3},
+		{"R3 BUTTON ", 1 << RETRO_DEVICE_ID_JOYPAD_R3},
+		{NULL, 0}};
 
 /* Must be a superset of all possible actions. This is used when
  * saving config, and if an entry isn't here, the saver won't see
  * it. */
 me_bind_action emuctrl_actions[] =
-{
-	{ "Save State       ", 1 << EACTION_SAVE_STATE },
-	{ "Load State       ", 1 << EACTION_LOAD_STATE },
-	{ "Toggle FPS/CPU%  ", 1 << EACTION_TOGGLE_HUD },
-	{ "Toggle FF        ", 1 << EACTION_TOGGLE_FF },
-	{ "Take Screenshot  ", 1 << EACTION_SCREENSHOT },
-	{ NULL,                0 }
-};
+	{
+		{"Save State       ", 1 << EACTION_SAVE_STATE},
+		{"Load State       ", 1 << EACTION_LOAD_STATE},
+		{"Toggle FPS/CPU%  ", 1 << EACTION_TOGGLE_HUD},
+		{"Toggle FF        ", 1 << EACTION_TOGGLE_FF},
+		{"Take Screenshot  ", 1 << EACTION_SCREENSHOT},
+		{NULL, 0}};
 
 static int emu_check_save_file(int slot, int *time)
 {
@@ -105,7 +103,7 @@ static unsigned short fname2color(const char *fname)
 
 #include "libpicofe/menu.c"
 
-static void draw_menu_message(const char *msg, void (*draw_more)(void))  __attribute__((unused));
+static void draw_menu_message(const char *msg, void (*draw_more)(void)) __attribute__((unused));
 
 static const char *mgn_saveloadcfg(int id, int *offs)
 {
@@ -139,69 +137,80 @@ static int mh_rmcfg(int id, int keys)
 	return 1;
 }
 
-static void draw_src_bg(void) {
+static void draw_src_bg(void)
+{
 	memcpy(g_menubg_ptr, g_menubg_src_ptr, g_menubg_src_h * g_menubg_src_pp * sizeof(uint16_t));
 	menu_darken_bg(g_menubg_ptr, g_menubg_src_ptr, g_menubg_src_h * g_menubg_src_pp, 0);
 }
 
-static int mh_set_core(int id, int keys) {
+static int mh_set_core(int id, int keys)
+{
 	if (corelist && id < corelist_len)
 		snprintf(core_path, sizeof(core_path), "%s/%s", cores_path, corelist[id]->d_name);
 
 	return 1;
 }
 
-static int core_selector(const struct dirent *ent) {
+static int core_selector(const struct dirent *ent)
+{
 	return has_suffix_i(ent->d_name, "_libretro.so");
 }
 
-static int menu_loop_core_page(int offset, int keys) {
-	static int sel = 0;
-	menu_entry e_menu_cores[MENU_ITEMS_PER_PAGE + 2] = {0}; /* +2 for Next, NULL */
-	size_t menu_idx = 0;
+static void menu_free_core_entries(menu_entry *entries)
+{
+	if (entries)
+	{
+		menu_entry *entry = entries;
+		while (entry->name)
+		{
+			free(entry->name);
+			entry++;
+		}
+		free(entries);
+	}
+}
+
+static menu_entry *menu_get_core_entries()
+{
+	menu_entry *entries = calloc(corelist_len + 1, sizeof(menu_entry));
+	if (!entries)
+		return NULL;
+
 	int i;
-	char names[MENU_ITEMS_PER_PAGE][MAX_PATH];
-
-	for (i = offset, menu_idx = 0; i < corelist_len && menu_idx < MENU_ITEMS_PER_PAGE; i++) {
-		menu_entry *option;
+	for (i = 0; i < corelist_len; i++)
+	{
+		menu_entry *option = entries + i;
 		struct dirent *ent = corelist[i];
-		option = &e_menu_cores[menu_idx];
-		core_extract_name(ent->d_name, names[menu_idx], sizeof(names[menu_idx]));
-
-		option->name = names[menu_idx];
+		option->name = calloc(1, MAX_PATH);
+		if (option->name)
+			core_extract_name(ent->d_name, option->name, MAX_PATH);
 		option->beh = MB_OPT_CUSTOM;
 		option->id = i;
 		option->enabled = 1;
 		option->selectable = 1;
 		option->handler = mh_set_core;
-		menu_idx++;
 	}
 
-	if (i < corelist_len) {
-		menu_entry *option;
-		option = &e_menu_cores[menu_idx];
-		option->name = "Next page";
-		option->beh = MB_OPT_CUSTOM;
-		option->id = i;
-		option->enabled = 1;
-		option->selectable = 1;
-		option->handler = menu_loop_core_page;
-	}
-
-	return me_loop(e_menu_cores, &sel);
+	return entries;
 }
 
-int menu_select_core(void) {
+int menu_select_core(void)
+{
+	static int sel = 0;
 	int ret = -1;
 	getcwd(cores_path, MAX_PATH);
 
 	corelist_len = scandir(cores_path, &corelist, core_selector, alphasort);
-	if (!corelist_len) return -1;
+	if (!corelist_len)
+		return -1;
 
 	plat_video_menu_enter(1);
 
-	if (menu_loop_core_page(0, 0) < 0)
+	menu_entry *entries = menu_get_core_entries();
+	if (entries == NULL)
 		goto finish;
+	me_loop("選擇核心", entries, &sel);
+	menu_free_core_entries(entries);
 
 	if (core_path[0] == '\0')
 		goto finish;
@@ -209,12 +218,13 @@ int menu_select_core(void) {
 	ret = 0;
 finish:
 	/* wait until menu, ok, back is released */
-	while (in_menu_wait_any(NULL, 50) & (PBTN_MENU|PBTN_MOK|PBTN_MBACK))
+	while (in_menu_wait_any(NULL, 50) & (PBTN_MENU | PBTN_MOK | PBTN_MBACK))
 		;
 
 	plat_video_menu_leave();
 
-	if (corelist_len > 0) {
+	if (corelist_len > 0)
+	{
 		while (corelist_len--)
 			free(corelist[corelist_len]);
 		free(corelist);
@@ -223,17 +233,21 @@ finish:
 	return ret;
 }
 
-int hidden_file_filter(struct dirent **namelist, int count, const char *basedir) {
+int hidden_file_filter(struct dirent **namelist, int count, const char *basedir)
+{
 	int newcount = 0;
 
-	for (int i = 0; i < count; i++) {
-		if (namelist[i]->d_name[0] == '.' && namelist[i]->d_name[1] != '.') {
+	for (int i = 0; i < count; i++)
+	{
+		if (namelist[i]->d_name[0] == '.' && namelist[i]->d_name[1] != '.')
+		{
 			free(namelist[i]);
 			namelist[i] = NULL;
 		}
 	}
 
-	for (int i = 0; i < count; i++) {
+	for (int i = 0; i < count; i++)
+	{
 		if (namelist[i] != NULL)
 			namelist[newcount++] = namelist[i];
 	}
@@ -241,27 +255,37 @@ int hidden_file_filter(struct dirent **namelist, int count, const char *basedir)
 	return newcount;
 }
 
-const char *select_content(void) {
+const char *select_content(void)
+{
 	const char *fname = NULL;
 	char content_path[MAX_PATH];
 	const char **extensions = core_extensions();
 	const char **exts_with_zip = NULL;
 	int i = 0, size = 0;
 
-	if (content && strlen(content->path)) {
+	if (content && strlen(content->path))
+	{
 		strncpy(content_path, content->path, sizeof(content_path) - 1);
-	} else {
+	}
+	else
+	{
 		core_load_last_opened(content_path, sizeof(content_path));
 	}
 
-	if (!content_path[0]) {
-		if (getenv("CONTENT_DIR")) {
+	if (!content_path[0])
+	{
+		if (getenv("CONTENT_DIR"))
+		{
 			strncpy(content_path, getenv("CONTENT_DIR"), sizeof(content_path) - 1);
 #ifdef CONTENT_DIR
-		} else {
+		}
+		else
+		{
 			strncpy(content_path, CONTENT_DIR, sizeof(content_path) - 1);
 #else
-		} else if (getenv("HOME")) {
+		}
+		else if (getenv("HOME"))
+		{
 			strncpy(content_path, getenv("HOME"), sizeof(content_path) - 1);
 #endif
 		}
@@ -269,19 +293,24 @@ const char *select_content(void) {
 
 	content_path[sizeof(content_path) - 1] = '\0';
 
-	if (extensions) {
+	if (extensions)
+	{
 		for (size = 0; extensions[size]; size++)
 			;
 	}
 
-	exts_with_zip = calloc(size + 2, sizeof (char *)); /* add 2 for "zip", NULL */
+	exts_with_zip = calloc(size + 2, sizeof(char *)); /* add 2 for "zip", NULL */
 
-	if (exts_with_zip) {
-		for (i = 0; extensions[i]; i++) {
+	if (exts_with_zip)
+	{
+		for (i = 0; extensions[i]; i++)
+		{
 			exts_with_zip[i] = extensions[i];
 		}
 		exts_with_zip[i] = "zip";
-	} else {
+	}
+	else
+	{
 		exts_with_zip = extensions;
 	}
 
@@ -293,7 +322,8 @@ const char *select_content(void) {
 	return fname;
 }
 
-int menu_select_content(char *filename, size_t len) {
+int menu_select_content(char *filename, size_t len)
+{
 	const char *fname = NULL;
 	int ret = -1;
 
@@ -308,15 +338,16 @@ int menu_select_content(char *filename, size_t len) {
 	ret = 0;
 
 finish:
-        /* wait until menu, ok, back is released */
-	while (in_menu_wait_any(NULL, 50) & (PBTN_MENU|PBTN_MOK|PBTN_MBACK))
+	/* wait until menu, ok, back is released */
+	while (in_menu_wait_any(NULL, 50) & (PBTN_MENU | PBTN_MOK | PBTN_MBACK))
 		;
 
 	plat_video_menu_leave();
 	return ret;
 }
 
-static int menu_loop_select_content(int id, int keys) {
+static int menu_loop_select_content(int id, int keys)
+{
 	const char *fname = select_content();
 
 	if (fname == NULL)
@@ -327,10 +358,12 @@ static int menu_loop_select_content(int id, int keys) {
 	return 1;
 }
 
-static void load_new_content(const char *fname) {
+static void load_new_content(const char *fname)
+{
 	const struct core_override *override = get_overrides();
 
-	if (!override || override->needs_reopen) {
+	if (!override || override->needs_reopen)
+	{
 #ifdef FUNKEY_S
 		FK_LoadNewGame(fname);
 		/* Does not return */
@@ -338,7 +371,9 @@ static void load_new_content(const char *fname) {
 		core_close();
 		core_open(core_path);
 #endif
-	} else {
+	}
+	else
+	{
 #ifdef FUNKEY_S
 		FK_Autosave();
 #endif
@@ -347,21 +382,24 @@ static void load_new_content(const char *fname) {
 	core_load();
 
 	content = content_init(fname);
-	if (!content) {
+	if (!content)
+	{
 		PA_ERROR("Couldn't allocate memory for content\n");
 		quit(-1);
 	}
 
 	set_defaults();
 
-	if (core_load_content(content)) {
+	if (core_load_content(content))
+	{
 		quit(-1);
 	}
 
 	load_config();
 	load_config_keys();
 
-	if (g_autostateld_opt) {
+	if (g_autostateld_opt)
+	{
 		resume_slot = 0;
 		state_resume();
 	}
@@ -387,7 +425,7 @@ static int menu_loop_disc(int id, int keys)
 	option->need_to_save = 1;
 	option->selectable = 1;
 
-	me_loop(e_menu_disc_options, &sel);
+	me_loop("光盤控制", e_menu_disc_options, &sel);
 
 	if (disc_get_index() + 1 != disc)
 		disc_switch_index(disc - 1);
@@ -395,24 +433,24 @@ static int menu_loop_disc(int id, int keys)
 	return 0;
 }
 
-static int menu_loop_cheats_page(int offset, int keys) {
+static int menu_loop_cheats_page(int offset, int keys)
+{
 	static int sel = 0;
 	menu_entry *e_menu_cheats;
-	size_t i, menu_idx;
+	size_t i;
 
-	/* cheats + 2 for possible "Next page" +  NULL */
-	e_menu_cheats = (menu_entry *)calloc(cheats->count + 2, sizeof(menu_entry));
-
-	if (!e_menu_cheats) {
+	/* cheats + 1 for NULL */
+	e_menu_cheats = (menu_entry *)calloc(cheats->count + 1, sizeof(menu_entry));
+	if (!e_menu_cheats)
+	{
 		PA_ERROR("Error allocating cheats\n");
 		return 0;
 	}
 
-	for (i = offset, menu_idx = 0; i < cheats->count && menu_idx < MENU_ITEMS_PER_PAGE; i++) {
+	for (i = 0; i < cheats->count; i++)
+	{
 		struct cheat *cheat = &cheats->cheats[i];
-		menu_entry *option;
-
-		option = &e_menu_cheats[menu_idx];
+		menu_entry *option = e_menu_cheats + i;
 
 		option->name = cheat->name;
 		option->beh = MB_OPT_ONOFF;
@@ -422,21 +460,9 @@ static int menu_loop_cheats_page(int offset, int keys) {
 		option->need_to_save = 1;
 		option->selectable = 1;
 		option->help = cheat->info;
-		menu_idx++;
 	}
 
-	if (i < cheats->count) {
-		menu_entry *option;
-		option = &e_menu_cheats[menu_idx];
-		option->name = "Next page";
-		option->beh = MB_OPT_CUSTOM;
-		option->id = i;
-		option->enabled = 1;
-		option->selectable = 1;
-		option->handler = menu_loop_cheats_page;
-	}
-
-	me_loop(e_menu_cheats, &sel);
+	me_loop("金手指", e_menu_cheats, &sel);
 	free(e_menu_cheats);
 
 	return 0;
@@ -449,28 +475,30 @@ static int menu_loop_cheats(int id, int keys)
 	return ret;
 }
 
-static int menu_loop_core_options_page(int offset, int keys) {
+static int menu_loop_core_options(int id, int keys)
+{
 	static int sel = 0;
 	menu_entry *e_menu_core_options;
 	size_t i, menu_idx;
 
-	/* core_option + 2 for possible "Next page" +  NULL */
-	e_menu_core_options = (menu_entry *)calloc(core_options.visible_len + 2, sizeof(menu_entry));
+	/* core_option + 1 for NULL */
+	e_menu_core_options = (menu_entry *)calloc(core_options.visible_len + 1, sizeof(menu_entry));
 
-	if (!e_menu_core_options) {
+	if (!e_menu_core_options)
+	{
 		PA_ERROR("Error allocating core options\n");
 		return 0;
 	}
 
-	for (i = offset, menu_idx = 0; i < core_options.len && menu_idx < MENU_ITEMS_PER_PAGE; i++) {
+	for (i = 0, menu_idx = 0; i < core_options.len; i++)
+	{
 		struct core_option_entry *entry = &core_options.entries[i];
-		menu_entry *option;
 		const char *key = entry->key;
 
 		if (entry->blocked || !entry->visible)
 			continue;
 
-		option = &e_menu_core_options[menu_idx];
+		menu_entry *option = e_menu_core_options + menu_idx;
 
 		option->name = entry->desc;
 		option->beh = MB_OPT_ENUM;
@@ -483,24 +511,7 @@ static int menu_loop_core_options_page(int offset, int keys) {
 		menu_idx++;
 	}
 
-	for (; i < core_options.len; i++) {
-		struct core_option_entry *entry = &core_options.entries[i];
-		if (!entry->blocked && entry->visible)
-			break;
-	}
-
-	if (i < core_options.len) {
-		menu_entry *option;
-		option = &e_menu_core_options[menu_idx];
-		option->name = "Next page";
-		option->beh = MB_OPT_CUSTOM;
-		option->id = i;
-		option->enabled = 1;
-		option->selectable = 1;
-		option->handler = menu_loop_core_options_page;
-	}
-
-	me_loop(e_menu_core_options, &sel);
+	me_loop("核心設置", e_menu_core_options, &sel);
 
 	options_update_changed();
 
@@ -509,72 +520,66 @@ static int menu_loop_core_options_page(int offset, int keys) {
 	return 0;
 }
 
-static int menu_loop_core_options(int id, int keys)
-{
-	return menu_loop_core_options_page(0, keys);
-}
+static const char h_rm_config_game[] = "Removes game-specific config file";
 
-static const char h_rm_config_game[]  = "Removes game-specific config file";
+static const char h_restore_def[] = "Switches back to default settings";
 
-static const char h_restore_def[]     = "Switches back to default settings";
-
-static const char h_show_fps[]        = "Shows frames and vsyncs per second";
-static const char h_show_cpu[]        = "Shows CPU usage";
+static const char h_show_fps[] = "Shows frames and vsyncs per second";
+static const char h_show_cpu[] = "Shows CPU usage";
 
 #if (SCREEN_WIDTH >= 320)
-static const char h_enable_drc[]      = "Dynamically adjusts audio rate for smoother video";
+static const char h_enable_drc[] = "Dynamically adjusts audio rate for smoother video";
 
-static const char h_audio_buffer_size[]        =
+static const char h_audio_buffer_size[] =
 	"The size of the audio buffer, in frames. Higher\n"
 	"values reduce the risk of audio crackling at the\n"
 	"cost of delayed sound.";
 
-static const char h_scale_size[]        =
+static const char h_scale_size[] =
 	"How much to stretch the screen when scaling. Native\n"
 	"does no stretching. Aspect uses the correct aspect\n"
 	"ratio. Full uses the whole screen.";
 
-static const char h_scale_filter[]        =
+static const char h_scale_filter[] =
 	"When stretching, how missing pixels are filled.\n"
 	"Nearest copies the last pixel. Sharp keeps pixels\n"
 	"aligned where possible. Smooth adds a blur effect.";
 
-static const char *men_scale_size[] = { "Native", "Aspect", "Full", NULL};
+static const char *men_scale_size[] = {"原始大小", "等比鋪滿", "拉伸鋪滿", NULL};
 #else
-static const char h_enable_drc[]      =
+static const char h_enable_drc[] =
 	"Dynamically adjusts audio rate for\n"
 	"smoother video.";
 
-static const char h_audio_buffer_size[]        =
+static const char h_audio_buffer_size[] =
 	"The audio buffer size, in frames.\n"
-  "Higher values reduce the risk of audio\n"
+	"Higher values reduce the risk of audio\n"
 	"crackling at the cost of delayed sound.";
 
-static const char h_scale_size[]        =
+static const char h_scale_size[] =
 	"How to fill the display. Native does\n"
 	"no stretching. Aspect keeps the correct\n"
 	"aspect ratio. Full uses the whole\n"
 	"screen. Crop hides pixels on the sides.";
 
-static const char h_scale_filter[]        =
+static const char h_scale_filter[] =
 	"When stretching, how missing pixels\n"
 	"are filled. Nearest copies the last\n"
 	"pixel. Sharp tries to keep pixels\n"
 	"aligned. Smooth adds a blur effect.";
 
-static const char *men_scale_size[] = { "Native", "Aspect", "Full", "Crop", NULL};
+static const char *men_scale_size[] = {"原始大小", "等比鋪滿", "拉伸鋪滿", "裁剪鋪滿", NULL};
 #endif
 
-static const char *men_scale_filter[] = { "Nearest", "Sharp", "Smooth", NULL};
+static const char *men_scale_filter[] = {"就近採樣", "銳利", "平滑", NULL};
 
-static menu_entry e_menu_video_options[] =
-{
-	mee_onoff_h      ("Show FPS",                 0, show_fps, 1, h_show_fps),
-	mee_onoff_h      ("Show CPU %%",              0, show_cpu, 1, h_show_cpu),
-	mee_enum_h       ("Screen size",              0, scale_size, men_scale_size, h_scale_size),
-	mee_enum_h       ("Filter",                   0, scale_filter, men_scale_filter, h_scale_filter),
-	mee_range_h      ("Audio buffer",             0, audio_buffer_size, 1, 15, h_audio_buffer_size),
-	mee_onoff_h      ("Audio adjustment",         0, enable_drc, 1, h_enable_drc),
+static menu_entry e_menu_video_options[] = {
+	mee_onoff_h("顯示幀數", 0, show_fps, 1, h_show_fps),
+	mee_onoff_h("顯示CPU %%", 0, show_cpu, 1, h_show_cpu),
+	mee_enum_h("螢幕尺寸", 0, scale_size, men_scale_size, h_scale_size),
+	mee_enum_h("圖像濾鏡", 0, scale_filter, men_scale_filter, h_scale_filter),
+	mee_range_h("音頻緩衝", 0, audio_buffer_size, 1, 15, h_audio_buffer_size),
+	mee_onoff_h("音頻調整", 0, enable_drc, 1, h_enable_drc),
 	mee_end,
 };
 
@@ -582,7 +587,7 @@ static int menu_loop_video_options(int id, int keys)
 {
 	static int sel = 0;
 
-	me_loop(e_menu_video_options, &sel);
+	me_loop("音頻和視頻", e_menu_video_options, &sel);
 	plat_reinit();
 
 	return 0;
@@ -596,7 +601,8 @@ static int key_config_loop_wrap(int id, int keys)
 	me_bind_action *emu_actions = CORE_OVERRIDE(override, emu_actions, emuctrl_actions);
 	size_t emu_action_size = CORE_OVERRIDE(override, emu_action_size, array_size(emuctrl_actions));
 
-	switch (id) {
+	switch (id)
+	{
 	case MA_CTRL_PLAYER1:
 		key_config_loop(actions, action_size - 1, 0);
 		break;
@@ -609,18 +615,18 @@ static int key_config_loop_wrap(int id, int keys)
 	return 0;
 }
 
-const char *config_label(int id, int *offs) {
+const char *config_label(int id, int *offs)
+{
 	return config_override ? "Loaded: game config" : "Loaded: global config";
 }
 
-static menu_entry e_menu_config_options[] =
-{
-	mee_cust_nosave  ("Save global config",       MA_OPT_SAVECFG,      mh_savecfg, mgn_saveloadcfg),
-	mee_cust_nosave  ("Save game config",         MA_OPT_SAVECFG_GAME, mh_savecfg, mgn_saveloadcfg),
-	mee_handler_id_h ("Delete game config",       MA_OPT_RMCFG_GAME,   mh_rmcfg,   h_rm_config_game),
-	mee_handler_h    ("Restore defaults",         mh_restore_defaults, h_restore_def),
-	mee_label        (""),
-	mee_label_mk     (0,                          config_label),
+static menu_entry e_menu_config_options[] = {
+	mee_cust_nosave("保存設置為通用", MA_OPT_SAVECFG, mh_savecfg, mgn_saveloadcfg),
+	mee_cust_nosave("保存為當前遊戲設置", MA_OPT_SAVECFG_GAME, mh_savecfg, mgn_saveloadcfg),
+	mee_handler_id_h("刪除當前設置", MA_OPT_RMCFG_GAME, mh_rmcfg, h_rm_config_game),
+	mee_handler_h("恢復預設值", mh_restore_defaults, h_restore_def),
+	mee_label(""),
+	mee_label_mk(0, config_label),
 	mee_end,
 };
 
@@ -629,25 +635,24 @@ static int menu_loop_config_options(int id, int keys)
 	static int sel = 0;
 	me_enable(e_menu_config_options, MA_OPT_RMCFG_GAME, config_override == 1);
 
-	me_loop(e_menu_config_options, &sel);
+	me_loop("保存設置", e_menu_config_options, &sel);
 
 	return 0;
 }
 
-static menu_entry e_menu_options[] =
-{
-	mee_handler   ("Audio and video",    menu_loop_video_options),
-	mee_handler_id("Emulator options",   MA_OPT_CORE_OPTS,    menu_loop_core_options),
-	mee_handler_id("Player controls",    MA_CTRL_PLAYER1,     key_config_loop_wrap),
-	mee_handler_id("Emulator controls",  MA_CTRL_EMU,         key_config_loop_wrap),
-	mee_handler   ("Save config",        menu_loop_config_options),
+static menu_entry e_menu_options[] = {
+	mee_handler("音頻和視頻", menu_loop_video_options),
+	mee_handler_id("核心設置", MA_OPT_CORE_OPTS, menu_loop_core_options),
+	mee_handler_id("按鍵設置", MA_CTRL_PLAYER1, key_config_loop_wrap),
+	mee_handler_id("快捷建設置", MA_CTRL_EMU, key_config_loop_wrap),
+	mee_handler("保存設置", menu_loop_config_options),
 	mee_end,
 };
 
 static int menu_loop_options(int id, int keys)
 {
 	static int sel = 0;
-	me_loop(e_menu_options, &sel);
+	me_loop("設置", e_menu_options, &sel);
 
 	return 0;
 }
@@ -676,17 +681,16 @@ static int main_menu_handler(int id, int keys)
 	return 0;
 }
 
-static menu_entry e_menu_main[] =
-{
-	mee_handler_id("Resume game",        MA_MAIN_RESUME_GAME, main_menu_handler),
-	mee_handler_id("Save state",         MA_MAIN_SAVE_STATE,  main_menu_handler),
-	mee_handler_id("Load state",         MA_MAIN_LOAD_STATE,  main_menu_handler),
-	mee_handler_id("Disc control",       MA_MAIN_DISC_CTRL,   menu_loop_disc),
-	mee_handler_id("Cheats",             MA_MAIN_CHEATS,      menu_loop_cheats),
-	mee_handler   ("Options",            menu_loop_options),
-	mee_handler_id("Reset game",         MA_MAIN_RESET_GAME,  main_menu_handler),
-	mee_handler_id("Load new game",      MA_MAIN_CONTENT_SEL, menu_loop_select_content),
-	mee_handler_id("Exit",               MA_MAIN_EXIT,        main_menu_handler),
+static menu_entry e_menu_main[] = {
+	mee_handler_id("繼續遊戲", MA_MAIN_RESUME_GAME, main_menu_handler),
+	mee_handler_id("即時存檔", MA_MAIN_SAVE_STATE, main_menu_handler),
+	mee_handler_id("即時讀檔", MA_MAIN_LOAD_STATE, main_menu_handler),
+	mee_handler_id("光盤控制", MA_MAIN_DISC_CTRL, menu_loop_disc),
+	mee_handler_id("金手指", MA_MAIN_CHEATS, menu_loop_cheats),
+	mee_handler("設置", menu_loop_options),
+	mee_handler_id("重置遊戲", MA_MAIN_RESET_GAME, main_menu_handler),
+	mee_handler_id("加載新遊戲", MA_MAIN_CONTENT_SEL, menu_loop_select_content),
+	mee_handler_id("退出", MA_MAIN_EXIT, main_menu_handler),
 	mee_end,
 };
 
@@ -697,7 +701,8 @@ static void draw_savestate_bg(int slot)
 	size_t bufsize = SCREEN_PITCH * SCREEN_HEIGHT;
 	void *buf = calloc(bufsize, sizeof(char));
 
-	if (!buf) {
+	if (!buf)
+	{
 		PA_WARN("Couldn't allocate savestate background");
 		goto finish;
 	}
@@ -706,7 +711,8 @@ static void draw_savestate_bg(int slot)
 	if (plat_load_screen(filename, buf, bufsize, &w, &h, &bpp))
 		goto finish;
 
-	if (bpp == sizeof(uint16_t)) {
+	if (bpp == sizeof(uint16_t))
+	{
 		menu_darken_bg(g_menubg_ptr, buf, w * h, 0);
 		drew_alt_bg = 1;
 	}
@@ -743,18 +749,20 @@ void menu_loop(void)
 	me_enable(e_menu_main, MA_MAIN_DISC_CTRL, needs_disc_ctrl);
 
 #ifdef MMENU
-	if (state_allowed()) {
+	if (state_allowed())
+	{
 		me_enable(e_menu_main, MA_MAIN_SAVE_STATE, mmenu == NULL);
 		me_enable(e_menu_main, MA_MAIN_LOAD_STATE, mmenu == NULL);
 	}
 #endif
-	me_loop(e_menu_main, &sel);
+	me_loop("主選單", e_menu_main, &sel);
 
 	/* wait until menu, ok, back is released */
-	while (in_menu_wait_any(NULL, 50) & (PBTN_MENU|PBTN_MOK|PBTN_MBACK))
+	while (in_menu_wait_any(NULL, 50) & (PBTN_MENU | PBTN_MOK | PBTN_MBACK))
 		;
 
-	if (new_fname) {
+	if (new_fname)
+	{
 		load_new_content(new_fname);
 		new_fname = NULL;
 	}
@@ -770,7 +778,8 @@ int menu_init(void)
 
 	g_menubg_src_ptr = calloc(g_menubg_src_pp * g_menubg_src_h, sizeof(uint16_t));
 	g_menubg_ptr = calloc(g_menuscreen_w * g_menuscreen_pp, sizeof(uint16_t));
-	if (g_menubg_src_ptr == NULL || g_menubg_ptr == NULL) {
+	if (g_menubg_src_ptr == NULL || g_menubg_ptr == NULL)
+	{
 		fprintf(stderr, "OOM\n");
 		return -1;
 	}
@@ -779,12 +788,14 @@ int menu_init(void)
 
 void menu_finish(void)
 {
-	if (g_menubg_src_ptr) {
+	if (g_menubg_src_ptr)
+	{
 		free(g_menubg_src_ptr);
 		g_menubg_src_ptr = NULL;
 	}
 
-	if (g_menubg_ptr) {
+	if (g_menubg_ptr)
+	{
 		free(g_menubg_ptr);
 		g_menubg_ptr = NULL;
 	}

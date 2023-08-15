@@ -66,11 +66,11 @@
 #define MENU_BG_SQUARE_WIDTH        180
 #define MENU_BG_SQUARE_HEIGHT       140
 
-#define MENU_FONT_NAME_TITLE        "/usr/games/menu_resources/OpenSans-Bold.ttf"
+#define MENU_FONT_NAME_TITLE        "/usr/games/layouts/Bigcup/unifont-15.0.01.ttf"
 #define MENU_FONT_SIZE_TITLE        22
-#define MENU_FONT_NAME_INFO         "/usr/games/menu_resources/OpenSans-Bold.ttf"
+#define MENU_FONT_NAME_INFO         "/usr/games/layouts/Bigcup/unifont-15.0.01.ttf"
 #define MENU_FONT_SIZE_INFO         16
-#define MENU_FONT_NAME_SMALL_INFO   "/usr/games/menu_resources/OpenSans-Regular.ttf"
+#define MENU_FONT_NAME_SMALL_INFO   "/usr/games/layouts/Bigcup/unifont-15.0.01.ttf"
 #define MENU_FONT_SIZE_SMALL_INFO   13
 #define MENU_PNG_BG_PATH            "/usr/games/menu_resources/zone_bg.png"
 #define MENU_PNG_ARROW_TOP_PATH     "/usr/games/menu_resources/arrow_top.png"
@@ -281,7 +281,7 @@ static void add_menu_zone(ENUM_MENU_TYPE menu_type)
 	case MENU_TYPE_VOLUME:
 		MENU_DEBUG_PRINTF("Init MENU_TYPE_VOLUME\n");
 		/// ------ Text ------
-		text_surface = TTF_RenderText_Blended(menu_title_font, "VOLUME", text_color);
+		text_surface = TTF_RenderUTF8_Blended(menu_title_font, "音量", text_color);
 		text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
 		text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 - padding_y_from_center_menu_zone;
 		SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
@@ -296,7 +296,7 @@ static void add_menu_zone(ENUM_MENU_TYPE menu_type)
 	case MENU_TYPE_BRIGHTNESS:
 		MENU_DEBUG_PRINTF("Init MENU_TYPE_BRIGHTNESS\n");
 		/// ------ Text ------
-		text_surface = TTF_RenderText_Blended(menu_title_font, "BRIGHTNESS", text_color);
+		text_surface = TTF_RenderUTF8_Blended(menu_title_font, "亮度", text_color);
 		text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
 		text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 - padding_y_from_center_menu_zone;
 		SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
@@ -311,7 +311,7 @@ static void add_menu_zone(ENUM_MENU_TYPE menu_type)
 	case MENU_TYPE_SAVE:
 		MENU_DEBUG_PRINTF("Init MENU_TYPE_SAVE\n");
 		/// ------ Text ------
-		text_surface = TTF_RenderText_Blended(menu_title_font, "SAVE", text_color);
+		text_surface = TTF_RenderUTF8_Blended(menu_title_font, "保存", text_color);
 		text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
 		text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 - padding_y_from_center_menu_zone*2;
 		SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
@@ -321,7 +321,7 @@ static void add_menu_zone(ENUM_MENU_TYPE menu_type)
 	case MENU_TYPE_LOAD:
 		MENU_DEBUG_PRINTF("Init MENU_TYPE_LOAD\n");
 		/// ------ Text ------
-		text_surface = TTF_RenderText_Blended(menu_title_font, "LOAD", text_color);
+		text_surface = TTF_RenderUTF8_Blended(menu_title_font, "讀取", text_color);
 		text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
 		text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 - padding_y_from_center_menu_zone*2;
 		SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
@@ -331,7 +331,7 @@ static void add_menu_zone(ENUM_MENU_TYPE menu_type)
 	case MENU_TYPE_ASPECT_RATIO:
 		MENU_DEBUG_PRINTF("Init MENU_TYPE_ASPECT_RATIO\n");
 		/// ------ Text ------
-		text_surface = TTF_RenderText_Blended(menu_title_font, "ASPECT RATIO", text_color);
+		text_surface = TTF_RenderUTF8_Blended(menu_title_font, "長寬比", text_color);
 		text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
 		text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 - padding_y_from_center_menu_zone;
 		SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
@@ -386,7 +386,7 @@ static void add_menu_zone(ENUM_MENU_TYPE menu_type)
 	case MENU_TYPE_ADVANCED:
 		MENU_DEBUG_PRINTF("Init MENU_TYPE_ADVANCED\n");
 		/// ------ Text ------
-		text_surface = TTF_RenderText_Blended(menu_title_font, "ADVANCED", text_color);
+		text_surface = TTF_RenderUTF8_Blended(menu_title_font, "高級設置", text_color);
 		text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
 		text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2;
 		SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
@@ -396,7 +396,7 @@ static void add_menu_zone(ENUM_MENU_TYPE menu_type)
 	case MENU_TYPE_EXIT:
 		MENU_DEBUG_PRINTF("Init MENU_TYPE_EXIT\n");
 		/// ------ Text ------
-		text_surface = TTF_RenderText_Blended(menu_title_font, "EXIT GAME", text_color);
+		text_surface = TTF_RenderUTF8_Blended(menu_title_font, "退出遊戲", text_color);
 		text_pos.x = (surface->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
 		text_pos.y = surface->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2;
 		SDL_BlitSurface(text_surface, NULL, surface, &text_pos);
@@ -703,26 +703,26 @@ static void menu_screen_refresh(SDL_Surface *screen, int menuItem, int prevItem,
 #ifdef HAS_MENU_SAVE
 		case MENU_TYPE_SAVE:
 			/// ---- Write slot -----
-			sprintf(text_tmp, "IN SLOT   < %d >", state_slot+1);
-			text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+			sprintf(text_tmp, "檔位   < %d >", state_slot+1);
+			text_surface = TTF_RenderUTF8_Blended(menu_info_font, text_tmp, text_color);
 			text_pos.x = (screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
 			text_pos.y = screen->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2;
 			SDL_BlitSurface(text_surface, NULL, screen, &text_pos);
 
 			if(menu_action){
-				sprintf(text_tmp, "Saving...");
-				text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+				sprintf(text_tmp, "儲存中...");
+				text_surface = TTF_RenderUTF8_Blended(menu_info_font, text_tmp, text_color);
 			}
 			else{
 				if(menu_confirmation){
-					sprintf(text_tmp, "Are you sure?");
-					text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+					sprintf(text_tmp, "是否確定?");
+					text_surface = TTF_RenderUTF8_Blended(menu_info_font, text_tmp, text_color);
 				}
 				else{
 					if (state_exists(state_slot)) {
-						text_surface = TTF_RenderText_Blended(menu_info_font, "Used", text_color);
+						text_surface = TTF_RenderUTF8_Blended(menu_info_font, "已使用", text_color);
 					} else {
-						text_surface = TTF_RenderText_Blended(menu_info_font, "Free", text_color);
+						text_surface = TTF_RenderUTF8_Blended(menu_info_font, "閒置", text_color);
 					}
 				}
 			}
@@ -734,26 +734,26 @@ static void menu_screen_refresh(SDL_Surface *screen, int menuItem, int prevItem,
 #ifdef HAS_MENU_LOAD
 		case MENU_TYPE_LOAD:
 			/// ---- Write slot -----
-			sprintf(text_tmp, "FROM SLOT   < %d >", state_slot+1);
-			text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+			sprintf(text_tmp, "從檔位   < %d >", state_slot+1);
+			text_surface = TTF_RenderUTF8_Blended(menu_info_font, text_tmp, text_color);
 			text_pos.x = (screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
 			text_pos.y = screen->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2;
 			SDL_BlitSurface(text_surface, NULL, screen, &text_pos);
 
 			if(menu_action){
-				sprintf(text_tmp, "Loading...");
-				text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+				sprintf(text_tmp, "讀取中...");
+				text_surface = TTF_RenderUTF8_Blended(menu_info_font, text_tmp, text_color);
 			}
 			else{
 				if(menu_confirmation){
-					sprintf(text_tmp, "Are you sure?");
-					text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+					sprintf(text_tmp, "是否確定?");
+					text_surface = TTF_RenderUTF8_Blended(menu_info_font, text_tmp, text_color);
 				}
 				else{
 					if (state_exists(state_slot)) {
-						text_surface = TTF_RenderText_Blended(menu_info_font, "Used", text_color);
+						text_surface = TTF_RenderUTF8_Blended(menu_info_font, "已使用", text_color);
 					} else {
-						text_surface = TTF_RenderText_Blended(menu_info_font, "Free", text_color);
+						text_surface = TTF_RenderUTF8_Blended(menu_info_font, "閒置", text_color);
 					}
 				}
 			}
@@ -765,7 +765,7 @@ static void menu_screen_refresh(SDL_Surface *screen, int menuItem, int prevItem,
 #ifdef HAS_MENU_ASPECT_RATIO
 		case MENU_TYPE_ASPECT_RATIO:
 			sprintf(text_tmp, "<   %s   >", aspect_ratio_name[menu_aspect_ratio]);
-			text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+			text_surface = TTF_RenderUTF8_Blended(menu_info_font, text_tmp, text_color);
 			text_pos.x = (screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
 			text_pos.y = screen->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 + padding_y_from_center_menu_zone;
 			SDL_BlitSurface(text_surface, NULL, screen, &text_pos);
@@ -1662,8 +1662,8 @@ int FK_RunResumeMenu(SDL_Surface *hw_screen)
 
             /* Draw confirmation */
             if(menu_confirmation){
-                sprintf(text_tmp, "Are you sure ?");
-                text_surface = TTF_RenderText_Blended(menu_info_font, text_tmp, text_color);
+                sprintf(text_tmp, "是否確定 ?");
+                text_surface = TTF_RenderUTF8_Blended(menu_info_font, text_tmp, text_color);
                 text_pos.x = (hw_screen->w - MENU_ZONE_WIDTH)/2 + (MENU_ZONE_WIDTH - text_surface->w)/2;
                 text_pos.y = hw_screen->h - MENU_ZONE_HEIGHT/2 - text_surface->h/2 + 2*padding_y_from_center_menu_zone;
                 SDL_BlitSurface(text_surface, NULL, hw_screen, &text_pos);

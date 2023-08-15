@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <SDL/SDL.h>
+#include <SDL/SDL_ttf.h>
 #include "core.h"
 #include "config.h"
 #include "content.h"
@@ -17,7 +19,6 @@
 #ifdef MMENU
 #include <dlfcn.h>
 #include <mmenu.h>
-#include <SDL/SDL.h>
 void* mmenu = NULL;
 char save_template_path[MAX_PATH];
 #endif
@@ -617,6 +618,18 @@ int main(int argc, char **argv) {
 		}
 	}
 
+#ifdef FUNKEY_S
+	if (IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG | IMG_INIT_TIF | IMG_INIT_WEBP) == 0) {
+		PA_ERROR("Error initializing SDL_Image\n");
+		quit(-1);
+	}
+#endif
+
+	if (TTF_Init() == -1) {
+		PA_ERROR("Error initializing SDL_ttf\n");
+		quit(-1);
+	}
+
 	if (plat_init()) {
 		quit(-1);
 	}
@@ -656,18 +669,6 @@ int main(int argc, char **argv) {
 	set_defaults();
 	load_config();
 	core_load();
-
-#ifdef FUNKEY_S
-	if (IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG | IMG_INIT_TIF | IMG_INIT_WEBP) == 0) {
-		PA_ERROR("Error initializing SDL_Image\n");
-		quit(-1);
-	}
-
-	if (TTF_Init() == -1) {
-		PA_ERROR("Error initializing SDL_ttf\n");
-		quit(-1);
-	}
-#endif
 
 	if (core_load_content(content)) {
 		quit(-1);

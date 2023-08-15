@@ -16,7 +16,7 @@ CFLAGS     += -Wall
 CFLAGS     += -fdata-sections -ffunction-sections -DPICO_HOME_DIR='"/.picoarch/"' -flto
 CFLAGS     += -I./ -I./libretro-common/include/ $(shell $(SYSROOT)/usr/bin/sdl-config --cflags)
 
-LDFLAGS    = -lc -ldl -lgcc -lm -lSDL -lasound -lpng -lz -Wl,--gc-sections -flto
+LDFLAGS    = -lc -ldl -lgcc -lm -lSDL -lSDL_ttf -lasound -lpng -lz -Wl,--gc-sections -flto
 
 # Unpolished or slow cores that build
 # EXTRA_CORES += mame2003_plus prboom scummvm tyrquake
@@ -127,7 +127,7 @@ else ifeq ($(platform), funkey-s)
 	SOURCES += plat_funkey.c funkey/fk_menu.c funkey/fk_instant_play.c
 	CFLAGS += -DCONTENT_DIR='"/mnt"' -DFUNKEY_S
 	LDFLAGS += -fPIC
-	LDFLAGS += -lSDL_image -lSDL_ttf # For fk_menu
+	LDFLAGS += -lSDL_image # For fk_menu
 	core_platform = unix-armv7-hardfloat-neon
 else ifeq ($(platform), unix)
 	SOURCES += plat_linux.c
@@ -163,7 +163,7 @@ endif
 
 ifeq ($(MMENU), 1)
 	CFLAGS += -DMMENU
-	LDFLAGS += -lSDL_image -lSDL_ttf -ldl
+	LDFLAGS += -lSDL_image -ldl
 endif
 
 CFLAGS += $(EXTRA_CFLAGS)
@@ -177,14 +177,7 @@ print-%:
 .PHONY: all
 all: $(BIN) cores
 
-libpicofe/.patched:
-	cd libpicofe && ($(foreach patch, $(sort $(wildcard patches/libpicofe/*.patch)), patch --no-backup-if-mismatch --merge -p1 < ../$(patch) &&) touch .patched)
-
 reverse = $(if $(wordlist 2,2,$(1)),$(call reverse,$(wordlist 2,$(words $(1)),$(1))) $(firstword $(1)),$(1))
-
-.PHONY: clean-libpicofe
-clean-libpicofe:
-	test ! -f libpicofe/.patched || (cd libpicofe && ($(foreach patch, $(call reverse,$(sort $(wildcard patches/libpicofe/*.patch))), patch -R --merge --no-backup-if-mismatch -p1 < ../$(patch) &&) rm .patched))
 
 CFLAGS += -MMD -MP
 DEPS=$(SOURCES:.c=.d)
@@ -194,7 +187,7 @@ include $(wildcard $(DEPS))
 
 OBJS = $(SOURCES:.c=.o)
 
-$(BIN): libpicofe/.patched $(OBJS)
+$(BIN): $(OBJS)
 	$(CC) $(OBJS) $(LDFLAGS) -o $(BIN)
 
 define CORE_template =
@@ -233,7 +226,7 @@ clean-picoarch:
 	rm -f *.opk
 
 .PHONY: clean
-clean: clean-libpicofe clean-picoarch
+clean: clean-picoarch
 	rm -f $(SOFILES)
 
 .PHONY: clean-all
