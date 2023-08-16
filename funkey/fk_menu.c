@@ -83,7 +83,7 @@
 #define WHITE_MAIN_G                236
 #define WHITE_MAIN_B                236
 
-#define MAX_SAVE_SLOTS              9
+#define MAX_SAVE_SLOTS              20
 
 #define MAXPATHLEN                  512
 
