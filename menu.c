@@ -71,11 +71,11 @@ me_bind_action me_ctrl_actions[] =
  * it. */
 me_bind_action emuctrl_actions[] =
 	{
-		{"Save State       ", 1 << EACTION_SAVE_STATE},
-		{"Load State       ", 1 << EACTION_LOAD_STATE},
-		{"Toggle FPS/CPU%  ", 1 << EACTION_TOGGLE_HUD},
-		{"Toggle FF        ", 1 << EACTION_TOGGLE_FF},
-		{"Take Screenshot  ", 1 << EACTION_SCREENSHOT},
+		{"即時存檔       ", 1 << EACTION_SAVE_STATE},
+		{"即時讀檔       ", 1 << EACTION_LOAD_STATE},
+		{"顯示 FPS/CPU%%  ", 1 << EACTION_TOGGLE_HUD},
+		{"加速開關        ", 1 << EACTION_TOGGLE_FF},
+		{"擷取螢幕  ", 1 << EACTION_SCREENSHOT},
 		{NULL, 0}};
 
 static int emu_check_save_file(int slot, int *time)
