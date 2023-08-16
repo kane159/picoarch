@@ -95,17 +95,11 @@ static int emu_save_load_game(int load, int unused)
 	return ret;
 }
 
-// RGB565
-static unsigned short fname2color(const char *fname)
-{
-	return 0xFFFF;
-}
-
 #include "libpicofe/menu.c"
 
 static void draw_menu_message(const char *msg, void (*draw_more)(void)) __attribute__((unused));
 
-static const char *mgn_saveloadcfg(int id, int *offs)
+static const char *mgn_saveloadcfg(int id)
 {
 	return "";
 }
@@ -425,7 +419,7 @@ static int menu_loop_disc(int id, int keys)
 	option->need_to_save = 1;
 	option->selectable = 1;
 
-	me_loop("光盤控制", e_menu_disc_options, &sel);
+	me_loop("光驅控制", e_menu_disc_options, &sel);
 
 	if (disc_get_index() + 1 != disc)
 		disc_switch_index(disc - 1);
@@ -587,7 +581,7 @@ static int menu_loop_video_options(int id, int keys)
 {
 	static int sel = 0;
 
-	me_loop("音頻和視頻", e_menu_video_options, &sel);
+	me_loop("音頻和影像", e_menu_video_options, &sel);
 	plat_reinit();
 
 	return 0;
@@ -615,13 +609,13 @@ static int key_config_loop_wrap(int id, int keys)
 	return 0;
 }
 
-const char *config_label(int id, int *offs)
+const char *config_label(int id)
 {
-	return config_override ? "Loaded: game config" : "Loaded: global config";
+	return config_override ? "已加載: 當前遊戲設置" : "已加載: 全局設置";
 }
 
 static menu_entry e_menu_config_options[] = {
-	mee_cust_nosave("保存設置為通用", MA_OPT_SAVECFG, mh_savecfg, mgn_saveloadcfg),
+	mee_cust_nosave("保存為全局設置", MA_OPT_SAVECFG, mh_savecfg, mgn_saveloadcfg),
 	mee_cust_nosave("保存為當前遊戲設置", MA_OPT_SAVECFG_GAME, mh_savecfg, mgn_saveloadcfg),
 	mee_handler_id_h("刪除當前設置", MA_OPT_RMCFG_GAME, mh_rmcfg, h_rm_config_game),
 	mee_handler_h("恢復預設值", mh_restore_defaults, h_restore_def),
@@ -641,10 +635,10 @@ static int menu_loop_config_options(int id, int keys)
 }
 
 static menu_entry e_menu_options[] = {
-	mee_handler("音頻和視頻", menu_loop_video_options),
+	mee_handler("音頻和影像", menu_loop_video_options),
 	mee_handler_id("核心設置", MA_OPT_CORE_OPTS, menu_loop_core_options),
 	mee_handler_id("按鍵設置", MA_CTRL_PLAYER1, key_config_loop_wrap),
-	mee_handler_id("快捷建設置", MA_CTRL_EMU, key_config_loop_wrap),
+	mee_handler_id("快捷鍵設置", MA_CTRL_EMU, key_config_loop_wrap),
 	mee_handler("保存設置", menu_loop_config_options),
 	mee_end,
 };
@@ -685,7 +679,7 @@ static menu_entry e_menu_main[] = {
 	mee_handler_id("繼續遊戲", MA_MAIN_RESUME_GAME, main_menu_handler),
 	mee_handler_id("即時存檔", MA_MAIN_SAVE_STATE, main_menu_handler),
 	mee_handler_id("即時讀檔", MA_MAIN_LOAD_STATE, main_menu_handler),
-	mee_handler_id("光盤控制", MA_MAIN_DISC_CTRL, menu_loop_disc),
+	mee_handler_id("光驅控制", MA_MAIN_DISC_CTRL, menu_loop_disc),
 	mee_handler_id("金手指", MA_MAIN_CHEATS, menu_loop_cheats),
 	mee_handler("設置", menu_loop_options),
 	mee_handler_id("重置遊戲", MA_MAIN_RESET_GAME, main_menu_handler),
@@ -755,7 +749,7 @@ void menu_loop(void)
 		me_enable(e_menu_main, MA_MAIN_LOAD_STATE, mmenu == NULL);
 	}
 #endif
-	me_loop("主選單", e_menu_main, &sel);
+	me_loop("主菜单", e_menu_main, &sel);
 
 	/* wait until menu, ok, back is released */
 	while (in_menu_wait_any(NULL, 50) & (PBTN_MENU | PBTN_MOK | PBTN_MBACK))

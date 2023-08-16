@@ -4,8 +4,8 @@
 #include <stdlib.h>
 
 struct cheat {
-	const char *name;
-	const char *info;
+	char *name;
+	char *info;
 	int enabled;
 	const char *code;
 };
